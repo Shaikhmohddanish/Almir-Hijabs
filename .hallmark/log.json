@@ -1,0 +1,29 @@
+[
+ {
+  "mode": "build",
+  "scope": "page",
+  "shape": "Photographic",
+  "theme": "loom",
+  "axes": "light/roman-serif/cool",
+  "hero": "Stage",
+  "nav": "masthead",
+  "footer": "index columns",
+  "imagery": "photographs, the client catalogue 18, cut-outs 6",
+  "photos": [],
+  "entry": "letter rise on the lookbook word and title",
+  "fingerprint": "stage hero with rail, switcher rows, lookbook carousel, statement, swatch rail, indigo band",
+  "sections": [
+   "hero",
+   "switcher",
+   "lookbook",
+   "statement",
+   "rail",
+   "band",
+   "footer"
+  ],
+  "signature": "a rail of six black niqabs that swing and turn to face you",
+  "waived": [],
+  "prompt": "Almira Hijabs storefront homepage: soft, retail shoppers, shop a collection, client catalogue photos only, Next.js on Shopify",
+  "date": "2026-11-16"
+ }
+]
