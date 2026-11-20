@@ -23,7 +23,8 @@ export default function HeroRail({ items }: { items: Garment[] }) {
       interval={3200}
       caption="Run a finger or the pointer along the rail, then open a niqab."
       aria-label="Niqabs on a rail"
-      renderDetailActions={(item) => <RailActions key={item.id} item={byId[item.id] ?? item} />}
+      // The key must differ from the close-up's own details block (keyed by the bare id), or React keeps every piece's details.
+      renderDetailActions={(item) => <RailActions key={`buy-${item.id}`} item={byId[item.id] ?? item} />}
     />
   );
 }
