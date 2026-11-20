@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { lockScroll } from "@/lib/scroll-lock";
 import type { ImageKind } from "../catalog";
 import { WishlistButton } from "./CartProvider";
@@ -26,6 +26,8 @@ export default function Stories({ groups }: { groups: StoryGroup[] }) {
     setOpen(null);
     opener.current?.focus();
   };
+  // Next.js keeps a page alive, hidden, after a link is followed; a viewer left open would still be open on the way back.
+  useLayoutEffect(() => () => setOpen(null), []);
   return (
     <section className="stories" aria-label="Stories">
       <ul className="stories__row">

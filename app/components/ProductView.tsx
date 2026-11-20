@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { formatMoney } from "@/lib/money";
+import { shopify } from "@/lib/shopify";
 import type { Product, Variant } from "../catalog";
 import ProductImage from "./ProductImage";
 import { useCart, WishlistButton } from "./CartProvider";
@@ -26,14 +27,16 @@ export default function ProductView({ product }: { product: Product }) {
   const [shot, setShot] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
-  const { add } = useCart();
+  const { add, buyNow, buying } = useCart();
 
   const options = optionsOf(product);
   const variants = product.variants ?? [];
   const chosen = variants.find((v) => fits(product, v, picked));
   const gallery = product.gallery?.length ? product.gallery : product.image ? [{ url: product.image }] : [];
-  // One option whose values have their own photographs is shown as swatches, and those photographs are the gallery.
-  const swatchy = options.length === 1 && variants.some((v) => v.image);
+  // An option whose every value has its own photograph (a colour, a design) is shown as swatches, and those photographs
+  // are the gallery. Sizes never are: every size of a piece looks the same.
+  const swatchOption = options.find((o) => o.name !== "Size" && o.values.every((value) => variants.some((v) => has(product, v, o.name, value) && v.image)))?.name;
+  const swatchy = swatchOption !== undefined;
   // A photograph the shopper picked wins, then the chosen variant's own, then the product's first.
   const image = (shot !== null ? gallery[shot]?.url : undefined) ?? chosen?.image ?? product.image;
   const unit = chosen?.price ?? product.price;
@@ -112,7 +115,7 @@ export default function ProductView({ product }: { product: Product }) {
                 const out = variants.filter((v) => has(product, v, o.name, value)).every((v) => v.available === false);
                 return (
                   <li key={value}>
-                    {swatchy && rep?.image ? (
+                    {o.name === swatchOption && rep?.image ? (
                       <button type="button" className="swatch-btn" aria-pressed={picked[o.name] === value} aria-label={out ? `${value}, sold out` : value} disabled={out} onClick={() => choose(o.name, value)}>
                         <Image src={rep.image} alt="" width={56} height={70} />
                       </button>
@@ -133,6 +136,11 @@ export default function ProductView({ product }: { product: Product }) {
           <button type="button" className="btn" disabled={!available} onClick={(e) => onAdd(e.currentTarget)}>
             {!available ? "Sold out" : added ? "Added to bag" : "Add to bag"}
           </button>
+          {shopify.enabled && available && (
+            <button type="button" className="btn btn--line" disabled={buying} onClick={() => buyNow(chosen?.id ?? product.variantId)}>
+              {buying ? "One moment…" : "Buy now"}
+            </button>
+          )}
           <WishlistButton handle={product.handle} name={product.name} />
           <Link className="link" href="/cart">
             View bag

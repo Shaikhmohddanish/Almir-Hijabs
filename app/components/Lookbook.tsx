@@ -8,6 +8,7 @@ import { lockScroll } from "@/lib/scroll-lock";
 import { imageOf, lookPairing, type Look, type Product } from "../catalog";
 import { useCart, WishlistButton } from "./CartProvider";
 import ProductImage from "./ProductImage";
+import SizeChips, { sizesOf, variantForSize } from "./SizeChips";
 
 const INTERVAL = 5200;
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -31,6 +32,9 @@ export default function Lookbook({ looks, pieces }: { looks: Look[]; pieces: Rec
   const ptr = useRef({ id: -1, x: 0, moved: false, v: 0, lastX: 0, lastT: 0, offset: 0, raf: 0 });
   const activeRef = useRef(0);
   activeRef.current = active;
+
+  // Next.js keeps a page alive, hidden, after a link is followed; a look left open would still be open on the way back.
+  useLayoutEffect(() => () => setOpen(null), []);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setPaused(true);
@@ -212,11 +216,26 @@ function piecesOf(look: Look, pieces: Record<string, Product>) {
   return [pieces[look.handle], pieces[lookPairing]].filter((p): p is Product => p !== undefined);
 }
 
+// The size picked for each piece, by handle; a piece starts at its first size.
+function usePickedSizes() {
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const sizeOf = (p: Product) => picked[p.handle] ?? sizesOf(p)[0];
+  const pick = (p: Product) => (size: string) => setPicked((old) => ({ ...old, [p.handle]: size }));
+  return { sizeOf, pick };
+}
+
+// What goes in the bag for a piece: the variant in the picked size, else the piece's first.
+function lineOf(p: Product, size?: string) {
+  const v = variantForSize(p, size);
+  return { handle: p.handle, name: p.name, variant: v?.name, image: imageOf(p), kind: p.kind, merchandiseId: v?.id ?? p.variantId };
+}
+
 function LookDetail({ look, pieces, index, total, onClose }: { look: Look; pieces: Record<string, Product>; index: number; total: number; onClose: () => void }) {
   const { add } = useCart();
   const items = piecesOf(look, pieces);
   const close = useRef<HTMLButtonElement>(null);
   const [lit, setLit] = useState<number | null>(null);
+  const { sizeOf, pick } = usePickedSizes();
 
   useEffect(() => {
     close.current?.focus();
@@ -227,10 +246,7 @@ function LookDetail({ look, pieces, index, total, onClose }: { look: Look; piece
 
   useEffect(() => lockScroll(), []);
 
-  const addItem = (k: number, from: Element | null) => {
-    const p = items[k];
-    add({ handle: p.handle, name: p.name, variant: p.variants?.[0]?.name, image: imageOf(p), kind: p.kind, merchandiseId: p.variants?.[0]?.id ?? p.variantId }, from);
-  };
+  const addItem = (k: number, from: Element | null) => add(lineOf(items[k], sizeOf(items[k])), from);
 
   return (
     <div className="look" role="dialog" aria-modal="true" aria-labelledby="look-title">
@@ -275,6 +291,7 @@ function LookDetail({ look, pieces, index, total, onClose }: { look: Look; piece
               <div className="look__text">
                 <Link href={`/products/${p.handle}`} className="look__name">{p.name}</Link>
                 <span className="card__summary">{k === 0 ? p.summary : "Pairs with this niqab"}</span>
+                {sizesOf(p).length > 1 && <SizeChips sizes={sizesOf(p)} value={sizeOf(p)} onChange={pick(p)} name={p.name} small />}
               </div>
               <div className="look__actions">
                 <WishlistButton handle={p.handle} name={p.name} />
@@ -301,6 +318,7 @@ function LookDetail({ look, pieces, index, total, onClose }: { look: Look; piece
 function LookPieces({ look, pieces }: { look: Look; pieces: Record<string, Product> }) {
   const { add } = useCart();
   const items = piecesOf(look, pieces);
+  const { sizeOf, pick } = usePickedSizes();
   return (
     <div className="tryon__pieces container">
       <p className="tryon__pieces-title">
@@ -316,8 +334,9 @@ function LookPieces({ look, pieces }: { look: Look; pieces: Record<string, Produ
             <span className="piece__text">
               <Link href={`/products/${p.handle}`} className="piece__name">{p.name}</Link>
               <span className="card__summary">{k === 0 ? p.summary : "Pairs with this niqab"}</span>
+              {sizesOf(p).length > 1 && <SizeChips sizes={sizesOf(p)} value={sizeOf(p)} onChange={pick(p)} name={p.name} small />}
             </span>
-            <button type="button" className="look__add" aria-label={`Add ${p.name} to bag`} onClick={(e) => add({ handle: p.handle, name: p.name, variant: p.variants?.[0]?.name, image: imageOf(p), kind: p.kind, merchandiseId: p.variants?.[0]?.id ?? p.variantId }, e.currentTarget)}>
+            <button type="button" className="look__add" aria-label={`Add ${p.name} to bag`} onClick={(e) => add(lineOf(p, sizeOf(p)), e.currentTarget)}>
               <Plus size={18} strokeWidth={1.5} aria-hidden="true" />
             </button>
           </li>

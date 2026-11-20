@@ -801,6 +801,9 @@ export function ClothingRailHero({
     onOpenChange?.(null);
   }, [onOpenChange]);
 
+  // Almir: Next.js keeps a page alive, hidden, after a link is followed; a close-up left open would still be open on the way back.
+  React.useLayoutEffect(() => () => setOpenIndex(null), []);
+
   function nearest(clientX: number, clientY: number) {
     const stage = stageRef.current;
     if (!stage) return null;

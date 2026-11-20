@@ -22,6 +22,10 @@ type Store = {
   dismissNotice: () => void;
   // Resolves to true when the piece went in as asked, false when Shopify said otherwise (the notice says what).
   add: (line: Omit<CartLine, "key" | "qty">, from?: Element | null) => Promise<boolean>;
+  // Straight to Shopify's checkout with this one piece; the bag is left as it is.
+  buyNow: (merchandiseId?: string) => Promise<boolean>;
+  // True from a Buy now click until checkout opens (or Shopify says no).
+  buying: boolean;
   setQty: (key: string, qty: number) => void;
   remove: (key: string) => void;
   drawer: boolean;
@@ -88,6 +92,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [checkoutUrl, setCheckoutUrl] = useState<string>();
   const [subtotal, setSubtotal] = useState<Money>();
   const [notice, setNotice] = useState<string | null>(null);
+  const [buying, setBuying] = useState(false);
+
+  // The browser's back button can bring a page back exactly as it was left, mid-purchase; Buy now must work again.
+  useEffect(() => {
+    const reset = (e: PageTransitionEvent) => {
+      if (e.persisted) setBuying(false);
+    };
+    window.addEventListener("pageshow", reset);
+    return () => window.removeEventListener("pageshow", reset);
+  }, []);
 
   // Shopify's answer replaces the bag, and its messages (sold out, fewer left) become the notice.
   // No cart in the answer means the one this browser held is gone, so the next add starts a new one.
@@ -170,6 +184,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
     },
     [send, setLines],
   );
+  // A cart of its own for this one piece, so whatever is already in the bag stays there for later.
+  const buyNow = useCallback(async (merchandiseId?: string) => {
+    if (!shopify.enabled || !merchandiseId) {
+      setNotice("This piece can't be bought yet.");
+      setDrawer(true);
+      return false;
+    }
+    setBuying(true);
+    try {
+      const r = await cartApi.create(merchandiseId);
+      if (r.cart && r.cart.totalQuantity > 0) {
+        window.location.assign(r.cart.checkoutUrl);
+        return true;
+      }
+      setNotice(r.errors[0] ?? "This piece can't be bought right now.");
+    } catch {
+      setNotice(OFFLINE);
+    }
+    setBuying(false);
+    setDrawer(true);
+    return false;
+  }, []);
   const setQty = useCallback(
     (key: string, qty: number) => {
       const id = window.localStorage.getItem(CART_ID);
@@ -190,8 +226,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const dismissNotice = useCallback(() => setNotice(null), []);
 
   const value = useMemo(
-    () => ({ lines, count: lines.reduce((n, l) => n + l.qty, 0), subtotal, checkoutUrl, notice, dismissNotice, add, setQty, remove, drawer, setDrawer, wish, toggleWish }),
-    [lines, subtotal, checkoutUrl, notice, dismissNotice, add, setQty, remove, drawer, wish, toggleWish],
+    () => ({ lines, count: lines.reduce((n, l) => n + l.qty, 0), subtotal, checkoutUrl, notice, dismissNotice, add, buyNow, buying, setQty, remove, drawer, setDrawer, wish, toggleWish }),
+    [lines, subtotal, checkoutUrl, notice, dismissNotice, add, buyNow, buying, setQty, remove, drawer, wish, toggleWish],
   );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

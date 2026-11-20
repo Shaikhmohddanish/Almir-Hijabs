@@ -110,12 +110,12 @@ export function toProduct(n: ProductNode, fallback: CollectionId = "niqabs"): Pr
   };
 }
 
-// A piece on the home page rail. It carries the variant the rail's "Add to bag" puts in the bag.
-export type Garment = RailGarment & { variantId?: string };
+// A piece on the home page rail. It carries its variants, so the close-up can ask for a size and add the right one.
+export type Garment = RailGarment & Pick<Product, "variantId" | "options" | "variants">;
 
 // The design code is the hang tag; `image` is a smaller cut-out when the query asked for one.
 export function garmentOf(p: Product, image = p.image): Garment {
-  return { id: p.handle, name: p.name, image, backImage: p.backImage, description: p.description, details: p.details, tag: p.design, variantId: p.variantId };
+  return { id: p.handle, name: p.name, image, backImage: p.backImage, description: p.description, details: p.details, tag: p.design, variantId: p.variantId, options: p.options, variants: p.variants };
 }
 export const toGarment = (n: ProductNode): Garment => garmentOf(toProduct(n), n.railImage?.url);
 

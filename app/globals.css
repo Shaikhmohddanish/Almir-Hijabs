@@ -723,3 +723,20 @@ a, button, summary, [role="button"], label, select { -webkit-tap-highlight-color
 .cart-notice .text-btn { flex: none; color: inherit; }
 .cart-line__price, .drawer__price { font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
 .drawer__total { display: flex; justify-content: space-between; gap: var(--space-md); margin: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* ---------- buy now, and the size asked for in the rail's close-up and the lookbook ---------- */
+
+.btn--line { background: transparent; color: var(--color-accent); }
+.btn--line:hover { background: var(--color-paper-2); border-color: var(--color-accent-2); }
+.btn--line:active { background: var(--color-paper-3); border-color: var(--color-accent); }
+.rail-detail__buy { display: grid; justify-items: center; gap: var(--space-md); margin-top: var(--space-md); }
+.rail-detail__buy .rail-detail__actions { margin-top: 0; }
+.size-chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.size-chips--s { gap: var(--space-2xs); margin-top: var(--space-2xs); }
+.size-chips--s .chip { min-height: 36px; padding-inline: var(--space-sm); font-size: var(--text-xs); }
+@media (min-width: 48rem) { .rail-detail__buy { justify-items: start; } }
+@media (max-width: 60rem) {
+  /* The phone's bar under a product: the two buttons share the width, and the bag is one tap away in the header. */
+  .add-row .btn { padding-inline: var(--space-sm); }
+  .add-row > .link { display: none; }
+}
